@@ -25,3 +25,16 @@ def getGoogleID(link):
 		print('eer')
 	else:
 		return uid
+
+def extractName(content):
+	name= ''
+	name_add = False
+	for i in content:
+		if i == '"':
+			if name_add:
+				name_add = False
+			else:
+				name_add = True
+		if name_add:
+			name += i
+	return name.replace('"','')

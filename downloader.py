@@ -1,4 +1,4 @@
-import urllib.request, requests, time, random, os, zipfile, sys, re ,io, smtplib, psycopg2
+import urllib, urllib.request, requests, time, random, os, zipfile, sys, re ,io, smtplib, psycopg2
 from requests.auth import HTTPBasicAuth
 from urllib.parse import urlencode, quote_plus
 from bs4 import BeautifulSoup
@@ -15,7 +15,14 @@ class seleniumBrowser:
         self.cap = DesiredCapabilities().FIREFOX
         self.cap["marionette"] = True
         self.options.headless = True
-        self.driver = webdriver.Firefox(executable_path='/home/Dug/chorus_downloader/geckodriver', capabilities=self.cap, options=self.options)
+        self.profile = webdriver.FirefoxProfile()
+        self.profile.set_preference('browser.download.folderList', 2) # custom location
+        self.profile.set_preference('browser.download.manager.showWhenStarting', False)
+        self.profile.set_preference('browser.download.dir','/home/Dug/songs_downloaded/')
+        self.profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip, application/rar')
+        self.profile.set_preference("pdfjs.disabled", True)
+        self.profile.set_preference("browser.helperApps.alwaysAsk.force", False)
+        self.driver = webdriver.Firefox(self.profile,executable_path='/home/Dug/chorus_downloader/geckodriver', capabilities=self.cap, options=self.options)
         self.driver.delete_all_cookies()
         self.driver.implicitly_wait(2)
 
@@ -43,16 +50,22 @@ class seleniumBrowser:
                     try:
                         song_charter= i.find_element_by_class_name('DownloadLink')
                     except Exception as msg:
-                        print(msg)
                         song_charter= i.find_element_by_class_name('DownloadLink--verified')
                     finally:
                         link = song_charter.find_element_by_tag_name('a')
                         link=link.get_attribute('href')
                         if 'https://public.fightthe.pw' in link:
                             self.driver.get(link)
+                            os.system('wget '+link+' -P /home/Dug/songs_downloaded/')
+
                         elif 'drive.google' in link:
                             uid = getGoogleID(link)
-                            self.driver.get('https://drive.google.com/uc?export=download&id='+str(uid))
+                            url = 'https://drive.google.com/uc?export=download&id='+str(uid)
+                            r = requests.get(url)
+                            file_name = extractName(r.headers['Content-Disposition'])
+                            urllib.request.urlretrieve(url, '/home/Dug/songs_downloaded/'+str(file_name))
+                            # self.driver.get('https://drive.google.com/uc?export=download&id='+str(uid))
+                            print('done')
                         break
         except Exception as msg:
             print(msg)
