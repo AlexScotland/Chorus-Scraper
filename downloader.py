@@ -22,11 +22,14 @@ class seleniumBrowser:
         self.profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip, application/rar')
         self.profile.set_preference("pdfjs.disabled", True)
         self.profile.set_preference("browser.helperApps.alwaysAsk.force", False)
-        self.driver = webdriver.Firefox(self.profile,executable_path='/home/Dug/chorus_downloader/geckodriver', capabilities=self.cap, options=self.options)
+        self.driver = webdriver.Firefox(self.profile,executable_path='/usr/share/pyshared/chorus_downloader/geckodriver', service_log_path='/dev/null',capabilities=self.cap, options=self.options)
         self.driver.delete_all_cookies()
         self.driver.implicitly_wait(2)
 
     def __del__(self):
+        self.driver.quit()
+
+    def quit(self):
         self.driver.quit()
 
     def getQuery(self,search_term):
@@ -38,41 +41,39 @@ class seleniumBrowser:
         else:
             return True
 
-    def getFirstSong(self):
+    def getFirstSong(self,request):
         try:
             song_charter = []
-            requested_song_name = 'Nightmare'
+            requested_song_name = request
             list_of_songs=self.driver.find_elements_by_class_name("Song")
             for i in list_of_songs:
+                breaker = False
                 song_element = i.find_element_by_class_name("Song__name")
                 song_name = song_element.get_attribute("innerText")
-                if song_name == requested_song_name:
-                    try:
-                        song_charter= i.find_element_by_class_name('DownloadLink')
-                    except Exception as msg:
-                        song_charter= i.find_element_by_class_name('DownloadLink--verified')
-                    finally:
-                        link = song_charter.find_element_by_tag_name('a')
-                        link=link.get_attribute('href')
-                        if 'https://public.fightthe.pw' in link:
-                            self.driver.get(link)
-                            os.system('wget '+link+' -P /home/Dug/songs_downloaded/')
-
-                        elif 'drive.google' in link:
-                            uid = getGoogleID(link)
-                            url = 'https://drive.google.com/uc?export=download&id='+str(uid)
-                            r = requests.get(url)
+                try:
+                    song_charter= i.find_element_by_class_name('DownloadLink')
+                except Exception as msg:
+                    song_charter= i.find_element_by_class_name('DownloadLink--verified')
+                finally:
+                    link = song_charter.find_element_by_tag_name('a')
+                    link=link.get_attribute('href')
+                    if 'https://public.fightthe.pw' in link:
+                        self.driver.get(link)
+                        os.system('wget '+link+' -P /home/Dug/songs_downloaded/')
+                    elif 'drive.google' in link:
+                        uid = getGoogleID(link)
+                        url = 'https://drive.google.com/uc?export=download&id='+str(uid)
+                        r = requests.get(url)
+                        if r.status_code == 404:
+                            breaker = False
+                        elif r.status_code == 200:
+                            breaker = True
                             file_name = extractName(r.headers['Content-Disposition'])
                             urllib.request.urlretrieve(url, '/home/Dug/songs_downloaded/'+str(file_name))
                             # self.driver.get('https://drive.google.com/uc?export=download&id='+str(uid))
-                            print('done')
+                    if breaker:
                         break
         except Exception as msg:
             print(msg)
         else:
             return True
-
-
-song_finder=seleniumBrowser()
-if song_finder.getQuery("Nightmare by Avenged Sevenfold"):
-    song_finder.getFirstSong()
