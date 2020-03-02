@@ -1,4 +1,5 @@
-```def render(source_url):
+```
+def render(source_url):
     """Fully render HTML, JavaScript and all."""
 
     import sys
@@ -31,7 +32,8 @@
 #url = 'http://webscraping.com'  
 #url='http://www.amazon.com'
 url="https://chorus.fightthe.pw/random"
-print(render(url))```
+print(render(url))
+```
 
 
 Using this code above, we can use PyQt5 for generating JS and then printing the HTML code.
